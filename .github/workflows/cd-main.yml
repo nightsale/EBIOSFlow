@@ -25,7 +25,7 @@ jobs:
       - run: ./mvnw package -DskipTests -B
       - name: Build Docker image
         run: docker build -f src/main/docker/Dockerfile.jvm -t ebiosflow:${{ github.sha }} .
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ebiosflow:${{ github.sha }}
           format: sarif
