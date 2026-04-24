@@ -118,7 +118,7 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-      - uses: anchore/scan-action@v3
+      - uses: anchore/scan-action@v7
         with:
           path: '.'
           fail-build: true
