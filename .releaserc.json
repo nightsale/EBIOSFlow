@@ -1,0 +1,24 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    ["@semantic-release/changelog", {
+      "changelogFile": "CHANGELOG.md"
+    }],
+    ["@semantic-release/exec", {
+      "prepareCmd": "mvn versions:set -DnewVersion=${nextRelease.version} -DgenerateBackupPoms=false"
+    }],
+    ["@semantic-release/github", {
+      "assets": [
+        { "path": "target/*-runner.jar", "label": "EBIOSFlow JAR" },
+        { "path": "target/openapi/openapi.json", "label": "OpenAPI Spec" },
+        { "path": "CHANGELOG.md", "label": "Changelog" }
+      ]
+    }],
+    ["@semantic-release/git", {
+      "assets": ["CHANGELOG.md", "pom.xml"],
+      "message": "chore(release): ${nextRelease.version} [skip ci]"
+    }]
+  ]
+}
