@@ -138,9 +138,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: ClamAV Scan
         run: |
-          sudo apt-get install -y clamav
+          sudo apt-get update
+          sudo apt-get install -y clamav clamav-daemon
+          # 1. On arrête le service automatique qui bloque le fichier
+          sudo systemctl stop clamav-freshclam
+          # 2. On met à jour la base de données virale manuellement
           sudo freshclam
-          clamscan --recursive --infected --remove=no .
+          # 3. On lance le scan
+          sudo clamscan --recursive --infected --remove=no .
 
   # ─── 9. MISES À JOUR (Versions check) ─────────────────────
   dependency-updates:
