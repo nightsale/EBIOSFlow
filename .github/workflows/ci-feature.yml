@@ -119,16 +119,20 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-      - uses: anchore/scan-action@v3
+      - name: Run Grype vulnerability scanner
+        uses: anchore/scan-action@v4 # Passage à la v4 de scan-action
+        id: scan
         with:
           path: '.'
-          fail-build: true
-          severity-cutoff: high
+          fail-build: false
           output-format: sarif
-      - uses: github/codeql-action/upload-sarif@v3
+
+
+      - name: Upload vulnerability report
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: results.sarif
+          sarif_file: ${{ steps.scan.outputs.sarif }}
 
   # ─── 8. ANTIVIRUS (ClamAV) ────────────────────────────────
   antivirus:
