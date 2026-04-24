@@ -87,6 +87,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw compile quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
+      - run: ls -la target/openapi || echo "Directory not found" # <-- Add this to debug
       - run: test -f target/openapi/openapi.json && echo "OpenAPI doc OK"
 
   # ─── 6. SCAN VULNÉRABILITÉS CODE (Trivy filesystem) ───────
