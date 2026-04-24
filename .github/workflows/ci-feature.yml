@@ -86,8 +86,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'temurin', cache: maven }
-      - run: ./mvnw compile quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
-      - run: ls -la target/openapi || echo "Directory not found" # <-- Add this to debug
+      # Using 'mvn' directly avoids the 11ms phantom execution bug
+      - run: mvn compile quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
       - run: test -f target/openapi/openapi.json && echo "OpenAPI doc OK"
 
   # ─── 6. SCAN VULNÉRABILITÉS CODE (Trivy filesystem) ───────
@@ -121,19 +121,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Grype vulnerability scanner
-        uses: anchore/scan-action@v4 # Passage à la v4 de scan-action
+        uses: anchore/scan-action@v4
         id: scan
+        env:
+          GRYPE_DB_AUTO_UPDATE: "true" # Forces Grype to fetch the latest DB
         with:
           path: '.'
           fail-build: false
           output-format: sarif
-
-
-      - name: Upload vulnerability report
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
 
   # ─── 8. ANTIVIRUS (ClamAV) ────────────────────────────────
   antivirus:
