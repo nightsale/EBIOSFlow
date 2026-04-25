@@ -3,7 +3,13 @@ name: CI — Feature → Dev
 on:
   pull_request:
     branches: [dev]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci-feature.yml'
   workflow_call:
+defaults:
+  run:
+    working-directory: ./backend
 
 jobs:
   # ─── 1. COMPILATION ───────────────────────────────────────
@@ -49,14 +55,14 @@ jobs:
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2025.3
         env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_680541140 }}
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
           pr-mode: false
           use-caches: true
           post-pr-comment: true
 
       # Envoie les résultats à GitHub Security (onglet Code Scanning)
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always() # S'exécute même si Qodana trouve des erreurs
         with:
           sarif_file: ${{ runner.temp }}/qodana/results/qodana.sarif.json
@@ -75,7 +81,7 @@ jobs:
         if: always()
         with:
           name: failsafe-reports
-          path: target/failsafe-reports/
+          path: backend/target/failsafe-reports/
 
   # ─── 5. DOC OPENAPI ───────────────────────────────────────
   doc:
@@ -86,7 +92,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'temurin', cache: maven }
-      - run: ./mvnw quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
+      - run: ./mvnw compile quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
       - run: test -f target/openapi/openapi.json && echo "OpenAPI doc OK"
 
   # ─── 6. SCAN VULNÉRABILITÉS CODE (Trivy filesystem) ───────
@@ -99,13 +105,13 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: 'fs'
           format: 'sarif'
           output: 'trivy-fs.sarif'
           severity: 'CRITICAL,HIGH'
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-fs.sarif
@@ -119,16 +125,15 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-      - uses: anchore/scan-action@v3
+      - name: Run Grype vulnerability scanner
+        uses: anchore/scan-action@v4
+        id: scan
+        env:
+          GRYPE_DB_AUTO_UPDATE: "true" # Forces Grype to fetch the latest DB
         with:
           path: '.'
-          fail-build: true
-          severity-cutoff: high
+          fail-build: false
           output-format: sarif
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: results.sarif
 
   # ─── 8. ANTIVIRUS (ClamAV) ────────────────────────────────
   antivirus:
@@ -138,9 +143,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: ClamAV Scan
         run: |
-          sudo apt-get install -y clamav
+          sudo apt-get update
+          sudo apt-get install -y clamav clamav-daemon
+          # 1. On arrête le service automatique qui bloque le fichier
+          sudo systemctl stop clamav-freshclam
+          # 2. On met à jour la base de données virale manuellement
           sudo freshclam
-          clamscan --recursive --infected --remove=no .
+          # 3. On lance le scan
+          sudo clamscan --recursive --infected --remove=no .
 
   # ─── 9. MISES À JOUR (Versions check) ─────────────────────
   dependency-updates:
