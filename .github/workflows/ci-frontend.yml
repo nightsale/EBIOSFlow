@@ -1,0 +1,65 @@
+name: CI — Frontend → Dev
+
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'frontend/**'              # Ce workflow ne s'exécutera QUE si tu modifies un fichier dans le dossier frontend !
+      - '.github/workflows/ci-frontend.yml'
+  workflow_call:
+
+defaults:
+  run:
+    working-directory: ./frontend  # On indique à la CI de se placer dans le bon dossier
+
+jobs:
+  # ─── 1. VÉRIFICATION DU CODE (Linting & TypeScript) ───────
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check TypeScript types
+        run: npx tsc --noEmit
+
+  # ─── 2. COMPILATION (Vite Build) ──────────────────────────
+  build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the production bundle
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
