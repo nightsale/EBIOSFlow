@@ -17,8 +17,8 @@ jobs:
     name: Compile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -31,53 +31,53 @@ jobs:
     runs-on: ubuntu-latest
     needs: compile
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw spotless:check -B
 
-  # ─── 3. ANALYSE QUALITÉ QODANA (JetBrains) ────────────────
-  qodana:
-    name: Qodana Code Quality
+  # ─── 3. ANALYSE QUALITÉ Sonarqube ────────────────
+  sonarqube:
+    name: "SonarQube Scan"
     runs-on: ubuntu-latest
-    needs: format
-    permissions:
-      contents: write
-      pull-requests: write
-      checks: write
-      security-events: write # Requis pour afficher les alertes dans l'onglet Security de GitHub
+    needs: [format]
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          # Disabling shallow clones is recommended for improving the relevancy of reporting
           fetch-depth: 0
 
-      - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2025.3
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+      - uses: actions/setup-java@v4
         with:
-          pr-mode: false
-          use-caches: true
-          post-pr-comment: true
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
 
-      # Envoie les résultats à GitHub Security (onglet Code Scanning)
-      - uses: github/codeql-action/upload-sarif@v4
-        if: always() # S'exécute même si Qodana trouve des erreurs
+      # Cache pour accélérer l'analyse SonarQube
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
         with:
-          sarif_file: ${{ runner.temp }}/qodana/results/qodana.sarif.json
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build and analyze with SonarQube
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Nécessaire pour les PR
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./mvnw -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dmaven.test.skip=true
 
     # ─── 4. TESTS D'INTÉGRATION (Quarkus + Testcontainers) ────
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: qodana
+    needs: [sonarqube]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw verify -Pintegration-tests -B
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: failsafe-reports
@@ -89,8 +89,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: compile
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw compile quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
       - run: test -f target/openapi/openapi.json && echo "OpenAPI doc OK"
@@ -104,8 +104,8 @@ jobs:
       security-events: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@0.35.0
+      - uses: actions/checkout@v6
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 #v0.36.0
         with:
           scan-type: 'fs'
           format: 'sarif'
@@ -125,8 +125,7 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-      - name: Run Grype vulnerability scanner
-        uses: anchore/scan-action@v4
+      - uses: anchore/scan-action@v7
         id: scan
         env:
           GRYPE_DB_AUTO_UPDATE: "true" # Forces Grype to fetch the latest DB
@@ -140,7 +139,7 @@ jobs:
     name: Antivirus Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: ClamAV Scan
         run: |
           sudo apt-get update
@@ -157,11 +156,11 @@ jobs:
     name: Dependency Updates Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw versions:display-dependency-updates -B | tee dep-updates.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dependency-updates-report
           path: dep-updates.txt
