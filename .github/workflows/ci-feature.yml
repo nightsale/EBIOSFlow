@@ -77,7 +77,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw verify -Pintegration-tests -B
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: failsafe-reports
@@ -161,7 +161,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw versions:display-dependency-updates -B | tee dep-updates.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dependency-updates-report
           path: dep-updates.txt
