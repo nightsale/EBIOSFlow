@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -32,7 +32,7 @@ jobs:
     needs: compile
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw spotless:check -B
 
@@ -74,7 +74,7 @@ jobs:
     needs: qodana
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw verify -Pintegration-tests -B
       - uses: actions/upload-artifact@v7
@@ -90,7 +90,7 @@ jobs:
     needs: compile
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw compile quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
       - run: test -f target/openapi/openapi.json && echo "OpenAPI doc OK"
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with: { java-version: '21', distribution: 'temurin', cache: maven }
       - run: ./mvnw versions:display-dependency-updates -B | tee dep-updates.txt
       - uses: actions/upload-artifact@v7
