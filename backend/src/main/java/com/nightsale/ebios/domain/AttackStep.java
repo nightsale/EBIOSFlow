@@ -7,10 +7,9 @@ import jakarta.persistence.ManyToOne;
 @Entity
 public class AttackStep extends PanacheEntity {
 
-    public String description; // Ex: "Intrusion via mail de hameçonnage"
-    public String phase;       // "CONNAITRE", "RENTRER", "TROUVER", "EXPLOITER"
-    public int likelihood;     // Vraisemblance (cotation EBIOS)
+  public String description; // Ex: "Intrusion via mail de hameçonnage"
+  public String phase; // "CONNAITRE", "RENTRER", "TROUVER", "EXPLOITER"
+  public int likelihood; // Vraisemblance (cotation EBIOS)
 
-    @ManyToOne
-    public Asset targetedAsset; // Le bien support ciblé par cette action
+  @ManyToOne public Asset targetedAsset; // Le bien support ciblé par cette action
 }

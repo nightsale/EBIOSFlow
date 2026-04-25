@@ -16,17 +16,17 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AttackGraphResource {
 
-    // Récupérer toutes les actions élémentaires (nœuds du graphe)
-    @GET
-    public List<AttackStep> getAllSteps() {
-        return AttackStep.listAll();
-    }
+  // Récupérer toutes les actions élémentaires (nœuds du graphe)
+  @GET
+  public List<AttackStep> getAllSteps() {
+    return AttackStep.listAll();
+  }
 
-    // Ajouter une nouvelle action élémentaire pour l'Atelier 4
-    @POST
-    @Transactional
-    public Response createStep(AttackStep step) {
-        step.persist();
-        return Response.status(Response.Status.CREATED).entity(step).build();
-    }
+  // Ajouter une nouvelle action élémentaire pour l'Atelier 4
+  @POST
+  @Transactional
+  public Response createStep(AttackStep step) {
+    step.persist();
+    return Response.status(Response.Status.CREATED).entity(step).build();
+  }
 }
