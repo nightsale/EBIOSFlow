@@ -3,7 +3,13 @@ name: CI — Feature → Dev
 on:
   pull_request:
     branches: [dev]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci-feature.yml'
   workflow_call:
+defaults:
+  run:
+    working-directory: ./backend
 
 jobs:
   # ─── 1. COMPILATION ───────────────────────────────────────
@@ -75,7 +81,7 @@ jobs:
         if: always()
         with:
           name: failsafe-reports
-          path: target/failsafe-reports/
+          path: backend/target/failsafe-reports/
 
   # ─── 5. DOC OPENAPI ───────────────────────────────────────
   doc:
@@ -86,8 +92,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'temurin', cache: maven }
-      # Using 'mvn' directly avoids the 11ms phantom execution bug
-      - run: mvn compile quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
+      - run: ./mvnw compile quarkus:build -Dquarkus.smallrye-openapi.store-schema-directory=target/openapi -B
       - run: test -f target/openapi/openapi.json && echo "OpenAPI doc OK"
 
   # ─── 6. SCAN VULNÉRABILITÉS CODE (Trivy filesystem) ───────
